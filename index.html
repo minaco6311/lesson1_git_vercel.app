@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIT QUEST — Gitを冒険で学ぼう</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a1e;
+      --panel: #12122e;
+      --card: #1a1a3e;
+      --border: #3333aa;
+      --green: #00ff88;
+      --yellow: #ffd700;
+      --red: #ff4466;
+      --blue: #44aaff;
+      --purple: #bb44ff;
+      --orange: #ff8844;
+      --text: #e0e0ff;
+      --dim: #7777aa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 15px;
+      line-height: 1.9;
+      min-height: 100vh;
+    }
+    canvas#bg { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 6px 20px 4px;
+      background: linear-gradient(180deg, rgba(0,0,30,0.95) 0%, transparent 100%);
+    }
+    .hero-title {
+      font-size: clamp(22px, 4vw, 42px);
+      color: var(--yellow);
+      text-shadow: 4px 4px 0 #996600, -2px -2px 0 #ffaa00;
+      animation: float 3s ease-in-out infinite;
+      margin-bottom: 4px;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    .hero-sub {
+      color: var(--green); font-size: 12px; margin-bottom: 4px;
+      animation: blink 1.2s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .hero-mascot { width: 110px; height: 110px; object-fit: contain; animation: float 2.5s ease-in-out infinite 0.5s; display:inline-block; filter: drop-shadow(0 0 14px rgba(68,170,255,0.5)); }
+
+    /* ===== NAV ===== */
+    .nav {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center; gap: 10px;
+      padding: 8px 16px; flex-wrap: wrap;
+      border-bottom: 4px solid var(--border);
+      background: rgba(10,10,30,0.9);
+    }
+    .nav-btn {
+      padding: 14px 22px;
+      background: var(--card); border: 4px solid var(--border);
+      box-shadow: 4px 4px 0 #000;
+      color: var(--text); font-family: 'Press Start 2P', monospace; font-size: 14px;
+      cursor: pointer; transition: all .1s;
+    }
+    .nav-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .nav-btn.active {
+      background: #001833; border-color: var(--green); color: var(--green);
+      box-shadow: 4px 4px 0 #000, 0 0 14px rgba(0,255,136,0.4);
+      transform: translateY(-2px);
+    }
+
+    /* ===== LAYOUT ===== */
+    .main { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:12px 18px 32px; }
+    .section { display:none; }
+    .section.active { display:block; }
+    .sec-header { text-align:center; margin-bottom:10px; }
+    .sec-title { font-size:20px; color:var(--yellow); text-shadow:3px 3px 0 #996600; margin-bottom:8px; }
+    .sec-sub { font-size:14px; color:var(--dim); }
+    .panel-label { font-size:14px; color:var(--blue); margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--border); }
+
+    /* ===== PIXEL BOX ===== */
+    .pbox { background:var(--panel); border:4px solid var(--border); box-shadow:4px 4px 0 #000; padding:20px; }
+
+    /* ===== COMMAND DOJO ===== */
+    .dojo-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:20px; }
+    @media(max-width:720px){ .dojo-grid{grid-template-columns:1fr;} }
+    .dojo-col { display:block; }
+    .cmd-list { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    @media(max-width:480px){ .cmd-list{grid-template-columns:repeat(2,1fr);} }
+    .cmd-btn {
+      padding:14px 6px; background:var(--card); border:3px solid var(--border);
+      box-shadow:3px 3px 0 #000; color:var(--green);
+      font-family:'Press Start 2P',monospace; font-size:12px;
+      cursor:pointer; text-align:center; line-height:2.2; transition:all .1s;
+    }
+    .cmd-btn:hover { border-color:var(--green); background:#001a0d; transform:translateY(-2px); }
+    .cmd-btn.on { border-color:var(--yellow); color:var(--yellow); background:#1a1200; }
+    .cmd-detail { min-height:400px; }
+    .cmd-name-big { font-size:22px; color:var(--yellow); margin-bottom:12px; }
+    .cmd-tag {
+      display:inline-block; padding:4px 12px; border:2px solid currentColor;
+      font-size:12px; margin-bottom:16px;
+    }
+    .cmd-desc-text { font-size:14px; line-height:2.4; margin-bottom:18px; }
+    .term {
+      background:#000; border:3px solid #333; padding:14px 16px;
+      font-size:13px; color:var(--green); margin:10px 0; line-height:2.2;
+      white-space:pre-wrap;
+    }
+    .hint { background:#0d0d22; border-left:4px solid var(--purple); padding:12px 16px; font-size:13px; color:var(--dim); line-height:2.2; margin-top:14px; }
+    .related-row { margin-top:14px; font-size:13px; }
+    .rel-tag { color:var(--blue); border:2px solid var(--blue); padding:4px 10px; margin:3px; cursor:pointer; display:inline-block; }
+    .rel-tag:hover { background:#001133; }
+    .placeholder { text-align:center; color:var(--dim); padding:60px 20px; font-size:14px; line-height:3; }
+
+    /* ===== QUIZ ===== */
+    .quiz-intro { text-align:center; padding:10px 20px 16px; }
+    .big-btn {
+      display:inline-block; margin-top:12px; padding:16px 36px;
+      border:4px solid; box-shadow:6px 6px 0 #000;
+      font-family:'Press Start 2P',monospace; font-size:16px; cursor:pointer; transition:all .1s;
+    }
+    .big-btn:hover { transform:translateY(-3px); box-shadow:9px 9px 0 #000; }
+    .big-btn:active { transform:translate(3px,3px); box-shadow:3px 3px 0 #000; }
+    .big-btn.g { background:#001a0d; border-color:var(--green); color:var(--green); }
+    .big-btn.b { background:#001133; border-color:var(--blue); color:var(--blue); }
+    .battle-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+    @media(max-width:580px){ .battle-row{grid-template-columns:1fr;} }
+    .battle-card { padding:18px; background:var(--panel); border:4px solid var(--border); box-shadow:4px 4px 0 #000; text-align:center; }
+    .b-name { font-size:14px; margin-bottom:10px; }
+    .sprite { font-size:48px; animation:float 2s ease-in-out infinite; margin:6px 0; display:block; }
+    .hp-wrap { background:#222; border:2px solid #555; height:18px; margin:10px 0; }
+    .hp-bar { height:100%; background:var(--green); transition:width .5s; }
+    .hp-bar.mid { background:var(--yellow); }
+    .hp-bar.low { background:var(--red); }
+    .hp-txt { font-size:13px; color:var(--dim); }
+    .qbox { padding:22px; background:var(--panel); border:4px solid var(--border); box-shadow:4px 4px 0 #000; margin-bottom:16px; }
+    .q-label { font-size:13px; color:var(--dim); margin-bottom:12px; }
+    .q-text { font-size:15px; line-height:2.4; }
+    .choices { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
+    @media(max-width:500px){ .choices{grid-template-columns:1fr;} }
+    .ch-btn {
+      padding:18px 16px; background:var(--card); border:3px solid var(--border);
+      box-shadow:3px 3px 0 #000; color:var(--text);
+      font-family:'Press Start 2P',monospace; font-size:13px; cursor:pointer;
+      text-align:left; line-height:2.2; transition:all .1s;
+    }
+    .ch-btn:hover:not([disabled]) { border-color:var(--blue); background:#001133; }
+    .ch-btn.ok { border-color:var(--green)!important; background:#002211!important; color:var(--green)!important; animation:fgn .3s; }
+    .ch-btn.ng { border-color:var(--red)!important; background:#220011!important; color:var(--red)!important; animation:frd .3s; }
+    .ch-btn[disabled] { cursor:not-allowed; }
+    @keyframes fgn { 0%,100%{background:#002211} 50%{background:#004422} }
+    @keyframes frd { 0%,100%{background:#220011} 50%{background:#440022} }
+    .status-bar {
+      display:flex; justify-content:space-between; padding:14px 18px;
+      background:#000; border:3px solid #333; font-size:14px; flex-wrap:wrap; gap:10px;
+    }
+    .explain-box { margin-top:14px; padding:14px 16px; font-size:13px; line-height:2.4; border-left:4px solid; }
+    .dmg-pop {
+      position:absolute; font-size:16px; font-family:'Press Start 2P',monospace;
+      pointer-events:none; z-index:50; animation:pop .8s ease-out forwards;
+    }
+    @keyframes pop { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-36px)} }
+
+    /* Result overlay */
+    .overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.88); z-index:200;
+      align-items:center; justify-content:center;
+    }
+    .overlay.on { display:flex; }
+    .result-box {
+      padding:32px; background:var(--panel);
+      border:6px solid var(--yellow); box-shadow:8px 8px 0 #000;
+      text-align:center; max-width:460px; width:90%;
+    }
+    .result-title { font-size:26px; color:var(--yellow); text-shadow:3px 3px 0 #996600; margin-bottom:16px; }
+    .result-msg { font-size:13px; line-height:2.8; margin-bottom:20px; white-space:pre-line; }
+
+    /* ===== GIT MAP ===== */
+    .flow-row {
+      display:flex; align-items:stretch; overflow-x:auto;
+      padding:12px 0 16px; gap:0; min-width:600px;
+    }
+    .flow-zone {
+      flex:1; min-width:140px; background:var(--panel);
+      border:3px solid var(--border); padding:16px 12px; text-align:center;
+    }
+    .zone-title { font-size:12px; color:var(--dim); margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--border); }
+    .zone-icon { font-size:30px; margin:8px 0; }
+    .zone-name { font-size:13px; margin-bottom:8px; }
+    .zone-desc { font-size:12px; color:var(--dim); line-height:2.2; }
+    .flow-mid {
+      display:flex; flex-direction:column; justify-content:center;
+      align-items:center; padding:0 10px; gap:10px; min-width:100px;
+    }
+    .flow-cmd {
+      font-size:12px; padding:7px 10px; border:2px solid;
+      cursor:pointer; white-space:nowrap; font-family:'Press Start 2P',monospace;
+      transition:background .1s;
+    }
+    .flow-cmd.fwd { color:var(--green); border-color:var(--green); background:#001100; }
+    .flow-cmd.fwd:hover { background:#002200; }
+    .flow-cmd.bwd { color:var(--orange); border-color:var(--orange); background:#110800; }
+    .flow-cmd.bwd:hover { background:#221000; }
+    .flow-info { margin-top:16px; display:none; }
+    .fi-title { font-size:16px; color:var(--yellow); margin-bottom:12px; }
+    .fi-desc { font-size:14px; line-height:2.4; margin-bottom:12px; }
+    .branch-pre {
+      background:#000; border:3px solid #333; padding:16px 18px;
+      font-size:13px; color:var(--green); line-height:2.6; overflow-x:auto;
+      white-space:pre; font-family:'Press Start 2P',monospace;
+    }
+    .legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:13px; }
+    .cheat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+    .cheat-card { background:var(--panel); border:3px solid var(--border); box-shadow:3px 3px 0 #000; padding:18px; }
+    .cheat-card-title { font-size:14px; color:var(--yellow); margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--border); }
+    .cheat-row { margin-bottom:12px; }
+    .cheat-cmd { color:var(--green); font-size:13px; display:block; margin-bottom:4px; }
+    .cheat-note { color:var(--dim); font-size:12px; }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      position:relative; z-index:1; text-align:center;
+      padding:14px; border-top:4px solid var(--border);
+      font-size:13px; color:var(--dim);
+      background:rgba(10,10,30,0.95);
+    }
+
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--border)}
+    ::-webkit-scrollbar-thumb:hover{background:var(--blue)}
+
+    /* ===== 吹き出し ===== */
+    .mascot-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-top: 4px;
+    }
+    .speech-bubble {
+      position: absolute;
+      top: 20px;
+      left: 118px;
+      background: #fff;
+      color: #0a0a2e;
+      border-radius: 16px;
+      padding: 10px 18px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      line-height: 1.9;
+      white-space: nowrap;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.25);
+      transform-origin: bottom left;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+    /* 吹き出しの尻尾（左向き） */
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: 18px;
+      left: -14px;
+      border: 8px solid transparent;
+      border-right-color: #fff;
+    }
+    @keyframes poyoon {
+      0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+      55%  { transform: scale(1.18) rotate(4deg);  opacity: 1; }
+      72%  { transform: scale(0.94) rotate(-2deg); opacity: 1; }
+      86%  { transform: scale(1.05) rotate(1deg);  opacity: 1; }
+      100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+    }
+    .speech-bubble.pop {
+      animation: poyoon 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<!-- HERO -->
+<header class="hero">
+  <h1 class="hero-title">⚔ GIT QUEST ⚔</h1>
+  <p class="hero-sub">▶ コマンドを習得して Git マスターになれ！</p>
+  <div class="mascot-wrapper">
+    <div class="speech-bubble" id="speech-bubble"></div>
+    <img class="hero-mascot" src="mascot.png" alt="マスコット">
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSec('dojo',this)">⚔ コマンド道場</button>
+  <button class="nav-btn" onclick="showSec('quiz',this)">👾 クイズバトル</button>
+  <button class="nav-btn" onclick="showSec('map',this)">🗺 Gitの地図</button>
+</nav>
+
+<main class="main">
+
+  <!-- ===== DOJO ===== -->
+  <section id="sec-dojo" class="section active">
+    <div class="sec-header">
+      <h2 class="sec-title">⚔ コマンド道場</h2>
+      <p class="sec-sub">コマンドをクリックして使い方をマスターしよう</p>
+    </div>
+    <div class="dojo-grid">
+      <div>
+        <p class="panel-label">📋 コマンド一覧</p>
+        <div class="cmd-list" id="cmd-list"></div>
+      </div>
+      <div>
+        <p class="panel-label">📖 コマンド詳細</p>
+        <div class="pbox cmd-detail" id="cmd-detail">
+          <div class="placeholder">👈 左のコマンドを<br>クリックしてね！<br><br><span style="font-size:13px">各コマンドの説明と<br>使い方がわかるよ ✨</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QUIZ ===== -->
+  <section id="sec-quiz" class="section">
+    <div class="sec-header">
+      <h2 class="sec-title">👾 クイズバトル</h2>
+      <p class="sec-sub">Git の知識でモンスターを倒せ！</p>
+    </div>
+    <div id="q-intro" class="quiz-intro">
+      <div style="font-size:72px;margin-bottom:10px;animation:float 2s ease-in-out infinite;display:inline-block;">👾</div>
+      <p style="font-size:15px;line-height:2.2;margin-bottom:6px;">
+        モンスターが現れた！<br>
+        クイズに正解してやっつけよう！
+      </p>
+      <p style="font-size:13px;color:var(--dim);line-height:2.2;margin-bottom:16px;">
+        ✅ 正解 → モンスターにダメージ<br>
+        ❌ 不正解 → 自分がダメージ
+      </p>
+      <button class="big-btn g" onclick="startQuiz()">▶ バトル開始！</button>
+    </div>
+    <div id="q-battle" style="display:none">
+      <div class="battle-row">
+        <div class="battle-card">
+          <p class="b-name" style="color:var(--blue)">🧙 プレイヤー</p>
+          <img id="p-sprite" src="mascot.png" alt="プレイヤー" style="width:72px;height:72px;object-fit:contain;animation:float 2s ease-in-out infinite;display:block;margin:4px auto;filter:drop-shadow(0 0 8px rgba(68,170,255,0.6))">
+          <div class="hp-wrap"><div class="hp-bar" id="p-hp-bar" style="width:100%"></div></div>
+          <p class="hp-txt">HP <span id="p-hp">10</span>/10</p>
+        </div>
+        <div class="battle-card" style="position:relative">
+          <p class="b-name" style="color:var(--red)">👾 モンスター</p>
+          <span class="sprite" id="m-sprite">👾</span>
+          <div class="hp-wrap"><div class="hp-bar" id="m-hp-bar" style="width:100%"></div></div>
+          <p class="hp-txt">HP <span id="m-hp">6</span>/<span id="m-max">6</span></p>
+        </div>
+      </div>
+      <div class="qbox" id="qbox">
+        <p class="q-label">QUESTION <span id="q-num">1</span>/10</p>
+        <p class="q-text" id="q-text"></p>
+        <div class="choices" id="choices"></div>
+      </div>
+      <div class="status-bar">
+        <span style="color:var(--yellow)">SCORE <span id="sc">0</span></span>
+        <span style="color:var(--purple)">STREAK <span id="st">0</span> 🔥</span>
+        <span style="color:var(--blue)">LV <span id="lv">1</span></span>
+        <span style="color:var(--dim)">TOTAL <span id="tot-sc">0</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAP ===== -->
+  <section id="sec-map" class="section">
+    <div class="sec-header">
+      <h2 class="sec-title">🗺 Gitの地図</h2>
+      <p class="sec-sub">ファイルとコマンドの流れを理解しよう</p>
+    </div>
+
+    <p class="panel-label">📦 データの流れ — コマンドをクリックで説明表示</p>
+    <div style="overflow-x:auto">
+      <div class="flow-row">
+        <div class="flow-zone" style="border-color:#aa4444">
+          <p class="zone-title" style="color:#ff8888">作業ディレクトリ</p>
+          <div class="zone-icon">📝</div>
+          <p class="zone-name">Working<br>Directory</p>
+          <p class="zone-desc">ファイルを<br>編集する場所</p>
+        </div>
+        <div class="flow-mid">
+          <button class="flow-cmd fwd" onclick="showFI('add')">git add ➜</button>
+          <button class="flow-cmd bwd" onclick="showFI('restore')">◀ git restore</button>
+        </div>
+        <div class="flow-zone" style="border-color:#aaaa44">
+          <p class="zone-title" style="color:#ffff88">ステージング</p>
+          <div class="zone-icon">📋</div>
+          <p class="zone-name">Staging<br>Area</p>
+          <p class="zone-desc">コミット前の<br>準備エリア</p>
+        </div>
+        <div class="flow-mid">
+          <button class="flow-cmd fwd" onclick="showFI('commit')">git commit ➜</button>
+          <button class="flow-cmd bwd" onclick="showFI('diff')">◀ git diff</button>
+        </div>
+        <div class="flow-zone" style="border-color:#44aa44">
+          <p class="zone-title" style="color:#88ff88">ローカルRepo</p>
+          <div class="zone-icon">💾</div>
+          <p class="zone-name">Local<br>Repository</p>
+          <p class="zone-desc">履歴が保存<br>される場所</p>
+        </div>
+        <div class="flow-mid">
+          <button class="flow-cmd fwd" onclick="showFI('push')">git push ➜</button>
+          <button class="flow-cmd bwd" onclick="showFI('pull')">◀ git pull</button>
+        </div>
+        <div class="flow-zone" style="border-color:#4444aa">
+          <p class="zone-title" style="color:#8888ff">リモートRepo</p>
+          <div class="zone-icon">☁️</div>
+          <p class="zone-name">Remote<br>Repository</p>
+          <p class="zone-desc">GitHubなどの<br>クラウド</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pbox flow-info" id="flow-info">
+      <p class="fi-title" id="fi-title"></p>
+      <p class="fi-desc" id="fi-desc"></p>
+      <div class="term" id="fi-cmd"></div>
+    </div>
+
+    <div style="margin-top:28px">
+      <p class="panel-label">🌿 ブランチのイメージ</p>
+      <div class="branch-pre"><span style="color:var(--blue)">main   :</span>  <span style="color:var(--yellow)">●</span>──<span style="color:var(--yellow)">●</span>──<span style="color:var(--yellow)">●</span>──────────────────<span style="color:var(--orange)">●</span>  ← merge
+                    <span style="color:var(--dim)">↓</span>                               <span style="color:var(--dim)">↑</span>
+<span style="color:var(--purple)">feature:</span>            <span style="color:var(--yellow)">●</span>──<span style="color:var(--green)">●</span>──<span style="color:var(--green)">●</span>──<span style="color:var(--green)">●</span>──<span style="color:var(--orange)">●</span></div>
+      <div class="legend">
+        <span><span style="color:var(--yellow)">●</span> コミット</span>
+        <span style="color:var(--blue)">── main ブランチ</span>
+        <span style="color:var(--purple)">── feature ブランチ</span>
+        <span style="color:var(--orange)">● マージポイント</span>
+      </div>
+    </div>
+
+    <div style="margin-top:28px">
+      <p class="panel-label">📜 コマンド早見表</p>
+      <div class="cheat-grid" id="cheat-grid"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- RESULT OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="result-box">
+    <div id="r-emoji" style="font-size:56px;margin-bottom:14px">🏆</div>
+    <h2 class="result-title" id="r-title">VICTORY!</h2>
+    <p class="result-msg" id="r-msg"></p>
+    <button class="big-btn g" onclick="closeResult()">🔄 もう一度！</button>
+  </div>
+</div>
+
+<footer class="footer">
+  ⚔ GIT QUEST &nbsp;|&nbsp; Total Score: <span id="grand-total">0</span> &nbsp;|&nbsp; <span style="color:var(--green)">Gitをマスターしよう！</span>
+</footer>
+
+<script>
+// ==================== STARFIELD ====================
+(()=>{
+  const c=document.getElementById('bg'),ctx=c.getContext('2d');
+  let W,H,stars=[];
+  const SZ=2;
+  function resize(){W=c.width=innerWidth;H=c.height=innerHeight;init();}
+  function init(){
+    stars=[];
+    const n=Math.floor(W*H/9000);
+    const cols=['#ffffff','#aaaaff','#ffaaaa','#aaffaa','#ffffaa'];
+    for(let i=0;i<n;i++) stars.push({
+      x:Math.floor(Math.random()*W/SZ)*SZ,
+      y:Math.floor(Math.random()*H/SZ)*SZ,
+      ph:Math.random()*Math.PI*2,
+      sp:0.8+Math.random()*1.5,
+      col:cols[Math.floor(Math.random()*cols.length)]
+    });
+  }
+  let t=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    t+=0.015;
+    stars.forEach(s=>{
+      ctx.globalAlpha=0.25+0.75*(0.5+0.5*Math.sin(t*s.sp+s.ph));
+      ctx.fillStyle=s.col;
+      ctx.fillRect(s.x,s.y,SZ,SZ);
+    });
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+  addEventListener('resize',resize);
+  resize();draw();
+})();
+
+// ==================== NAV ====================
+// ==================== 吹き出しセリフ ====================
+const LINES = {
+  dojo: [
+    'コマンドを覚えるぞ！⚔',
+    'まずは git init から！🐴',
+    'コツコツやれば強くなる！',
+    'git add . ！えいっ！💪',
+    'push すれば届くぞ！🚀',
+  ],
+  quiz: [
+    '全問正解めざすぞ！💪',
+    'ヒヒーン！負けないぞ！🐴',
+    'モンスターをやっつけろ！👾',
+    '知識が一番の武器じゃ！⚔',
+    'かかってこい！💥',
+  ],
+  map: [
+    '流れを理解するのじゃ！🗺',
+    'push と pull を覚えよう！',
+    'ブランチは枝のことじゃ！🌿',
+    'commit は記録の魔法！💾',
+    '地図を見ればわかるぞ！✨',
+  ]
+};
+
+function showSec(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+  // 吹き出しをぽよーん
+  const pool = LINES[id] || LINES.dojo;
+  const text = pool[Math.floor(Math.random() * pool.length)];
+  const bubble = document.getElementById('speech-bubble');
+  bubble.textContent = text;
+  bubble.classList.remove('pop');
+  // 一瞬待ってクラス再付与（再アニメーション用）
+  void bubble.offsetWidth;
+  bubble.classList.add('pop');
+}
+
+// ==================== COMMAND DATA ====================
+const CMDS=[
+  {id:'init',em:'🏗',name:'git init',tag:'初期化',tc:'var(--green)',
+   desc:'カレントディレクトリを Git リポジトリとして初期化します。\n.git フォルダが作成され、Git が使えるようになります。',
+   syn:'git init [ディレクトリ名]',
+   ex:[{c:'git init',n:'現在のフォルダをリポジトリにする'},
+       {c:'git init my-project',n:'新規フォルダを作ってリポジトリにする'}],
+   hint:'✨ これがすべての始まり！プロジェクト開始時に一度だけ実行するよ。',
+   rel:['clone','status']},
+  {id:'clone',em:'📥',name:'git clone',tag:'コピー',tc:'var(--blue)',
+   desc:'リモートリポジトリを自分のPCにコピーします。\nGitHub などからプロジェクトを丸ごとダウンロードできます。',
+   syn:'git clone <URL> [ディレクトリ名]',
+   ex:[{c:'git clone https://github.com/user/repo.git',n:'GitHub からクローン'},
+       {c:'git clone https://github.com/user/repo.git mydir',n:'名前を指定してクローン'}],
+   hint:'💡 GitHub の「Code」ボタンから URL をコピーして使おう！',
+   rel:['init','pull']},
+  {id:'status',em:'🔍',name:'git status',tag:'確認',tc:'var(--orange)',
+   desc:'リポジトリの現在の状態を表示します。\nどのファイルが変更・ステージされているか一目でわかります。',
+   syn:'git status [-s]',
+   ex:[{c:'git status',n:'詳しく状態を表示'},
+       {c:'git status -s',n:'短縮形式で表示（M=変更, A=追加, ??=未追跡）'}],
+   hint:'🎯 迷ったらまず git status！現在地を確認する魔法のコマンド。',
+   rel:['add','diff']},
+  {id:'add',em:'📋',name:'git add',tag:'ステージ',tc:'var(--green)',
+   desc:'ファイルをステージングエリアに追加します。\nコミットしたいファイルを「準備中」の状態にします。',
+   syn:'git add <ファイル名 or .>',
+   ex:[{c:'git add index.html',n:'指定ファイルだけ追加'},
+       {c:'git add .',n:'すべての変更ファイルを追加'},
+       {c:'git add *.css',n:'.css ファイルをすべて追加'}],
+   hint:'💡 git add . は便利だけど、不要なファイルが入らないよう注意！',
+   rel:['status','commit','restore']},
+  {id:'commit',em:'💾',name:'git commit',tag:'保存',tc:'var(--green)',
+   desc:'ステージングエリアの変更をリポジトリに記録します。\nメッセージを付けて「何をしたか」を残しましょう。',
+   syn:'git commit -m "メッセージ"',
+   ex:[{c:'git commit -m "ログイン機能を追加"',n:'メッセージ付きでコミット'},
+       {c:'git commit -am "バグ修正"',n:'変更済みファイルをすべてステージしてコミット'}],
+   hint:'📝 コミットメッセージは「何を・なぜ」したか分かるように書こう！',
+   rel:['add','log','push']},
+  {id:'push',em:'🚀',name:'git push',tag:'送信',tc:'var(--blue)',
+   desc:'ローカルのコミットをリモートリポジトリに送信します。\nGitHub などにアップロードして他の人と共有できます。',
+   syn:'git push <リモート名> <ブランチ名>',
+   ex:[{c:'git push origin main',n:'main ブランチを origin にプッシュ'},
+       {c:'git push -u origin feature',n:'初回プッシュで追跡設定も同時に行う'}],
+   hint:'🚀 push 前に必ず pull して最新状態にしておこう！',
+   rel:['pull','commit']},
+  {id:'pull',em:'📡',name:'git pull',tag:'取得',tc:'var(--blue)',
+   desc:'リモートリポジトリの最新変更をローカルに取り込みます。\nfetch + merge を一度に行います。',
+   syn:'git pull [リモート名] [ブランチ名]',
+   ex:[{c:'git pull origin main',n:'origin の main を取り込む'},
+       {c:'git pull',n:'追跡ブランチから取り込む'}],
+   hint:'👥 チーム開発では作業前に必ず git pull！',
+   rel:['push','fetch','merge']},
+  {id:'branch',em:'🌿',name:'git branch',tag:'ブランチ管理',tc:'var(--purple)',
+   desc:'ブランチの一覧表示・作成・削除を行います。\nブランチとは作業の「分岐」のことです。',
+   syn:'git branch [ブランチ名] [-d ブランチ名]',
+   ex:[{c:'git branch',n:'ブランチ一覧を表示'},
+       {c:'git branch feature-login',n:'feature-login ブランチを作成'},
+       {c:'git branch -d feature-login',n:'feature-login ブランチを削除'}],
+   hint:'🌱 新機能は必ず新しいブランチで！main は安全に保つのが鉄則。',
+   rel:['switch','merge']},
+  {id:'switch',em:'🔀',name:'git switch',tag:'切り替え',tc:'var(--purple)',
+   desc:'ブランチを切り替えます。\ngit checkout より新しく安全なコマンドです。',
+   syn:'git switch <ブランチ名>',
+   ex:[{c:'git switch main',n:'main ブランチに切り替え'},
+       {c:'git switch -c new-feature',n:'ブランチを新規作成して切り替え'}],
+   hint:'💡 新しいコマンドなので git switch を積極的に使おう！',
+   rel:['branch','merge']},
+  {id:'merge',em:'🔗',name:'git merge',tag:'統合',tc:'var(--purple)',
+   desc:'他のブランチの変更を現在のブランチに取り込みます。\n機能開発が終わったら main にマージします。',
+   syn:'git merge <ブランチ名>',
+   ex:[{c:'git switch main\ngit merge feature-login',n:'feature-login を main にマージ'}],
+   hint:'⚠️ コンフリクトが起きたら落ち着いてファイルを編集して解決しよう！',
+   rel:['branch','switch','rebase']},
+  {id:'log',em:'📜',name:'git log',tag:'履歴',tc:'var(--orange)',
+   desc:'コミット履歴を表示します。\n誰がいつ何を変更したかを確認できます。',
+   syn:'git log [オプション]',
+   ex:[{c:'git log',n:'コミット履歴を表示'},
+       {c:'git log --oneline',n:'1行で簡潔に表示'},
+       {c:'git log --oneline --graph',n:'ブランチのグラフ付きで表示'}],
+   hint:'🕐 --oneline --graph は超便利！ブランチの流れが一目でわかるよ。',
+   rel:['diff','show']},
+  {id:'diff',em:'🔎',name:'git diff',tag:'差分',tc:'var(--orange)',
+   desc:'ファイルの変更差分を表示します。\n+ が追加行、- が削除行で確認できます。',
+   syn:'git diff [オプション] [ファイル名]',
+   ex:[{c:'git diff',n:'未ステージの変更を確認'},
+       {c:'git diff --staged',n:'ステージ済みの変更を確認'},
+       {c:'git diff main feature',n:'ブランチ間の差分を確認'}],
+   hint:'コミット前に差分を確認する習慣をつけると安心！',
+   rel:['status','log']},
+  {id:'stash',em:'📦',name:'git stash',tag:'退避',tc:'var(--purple)',
+   desc:'作業中の変更を一時的に退避します。\n別ブランチに移りたいけどまだコミットしたくないときに使います。',
+   syn:'git stash [pop/list]',
+   ex:[{c:'git stash',n:'変更を退避'},
+       {c:'git stash list',n:'退避リストを表示'},
+       {c:'git stash pop',n:'最新の退避を取り出す'}],
+   hint:'🧊 変更を「一時保存」するコマンド。コンビニロッカーみたいなイメージ！',
+   rel:['switch','branch']},
+  {id:'restore',em:'↩️',name:'git restore',tag:'取り消し',tc:'var(--red)',
+   desc:'ファイルの変更を取り消します。\n--staged でステージングを取り消せます。',
+   syn:'git restore [--staged] <ファイル名>',
+   ex:[{c:'git restore index.html',n:'作業ディレクトリの変更を取り消す'},
+       {c:'git restore --staged index.html',n:'ステージングを取り消す'}],
+   hint:'⚠️ 作業ディレクトリの変更は戻せないので注意！',
+   rel:['add','status']},
+  {id:'revert',em:'🔄',name:'git revert',tag:'打ち消し',tc:'var(--red)',
+   desc:'指定コミットを打ち消す新しいコミットを作ります。\npush 後の修正に使う安全な取り消し方法です。',
+   syn:'git revert <コミットID>',
+   ex:[{c:'git revert HEAD',n:'直前のコミットを打ち消す'},
+       {c:'git revert abc1234',n:'指定コミットを打ち消す'}],
+   hint:'✅ push 後の修正は reset ではなく revert を使おう！履歴が残って安全。',
+   rel:['log','reset']}
+];
+
+// ==================== DOJO ====================
+function renderDojo(){
+  const el=document.getElementById('cmd-list');
+  el.innerHTML=CMDS.map(c=>`
+    <button class="cmd-btn" id="cb-${c.id}" onclick="showCmd('${c.id}')">
+      ${c.em}<br>${c.name.replace('git ','')}
+    </button>`).join('');
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showCmd(id){
+  const c=CMDS.find(x=>x.id===id);if(!c)return;
+  document.querySelectorAll('.cmd-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('cb-'+id).classList.add('on');
+  const exHTML=c.ex.map(e=>`
+    <div class="term">${esc(e.c)}\n<span style="color:var(--dim);font-size:12px">↑ ${esc(e.n)}</span></div>`).join('');
+  const relHTML=c.rel?c.rel.map(r=>`<span class="rel-tag" onclick="showCmd('${r}')">git ${r}</span>`).join(''):'';
+  document.getElementById('cmd-detail').innerHTML=`
+    <div style="margin-bottom:12px"><span style="font-size:28px">${c.em}</span>
+    <span class="cmd-name-big" style="vertical-align:middle;margin-left:10px">${c.name}</span></div>
+    <span class="cmd-tag" style="color:${c.tc};border-color:${c.tc}">${c.tag}</span>
+    <p class="cmd-desc-text">${esc(c.desc).replace(/\n/g,'<br>')}</p>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:6px">📌 構文</p>
+    <div style="background:#000;padding:12px 14px;border:2px solid #333;font-size:14px;color:var(--yellow);margin-bottom:16px">${esc(c.syn)}</div>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:6px">💡 使用例</p>
+    ${exHTML}
+    <div class="hint">${c.hint}</div>
+    ${relHTML?`<div class="related-row"><span style="color:var(--dim)">関連: </span>${relHTML}</div>`:''}
+  `;
+}
+
+// ==================== FLOW MAP ====================
+const FI={
+  add:{t:'📋 git add — ステージングに追加',d:'ファイルを作業ディレクトリからステージングエリアに追加します。\nコミットしたいファイルを「準備中」にするコマンドです。',c:'git add ファイル名\ngit add .         # すべての変更をステージ'},
+  restore:{t:'↩️ git restore — 変更を元に戻す',d:'作業ディレクトリの変更を取り消します。\n--staged でステージングの取り消しもできます。',c:'git restore ファイル名\ngit restore --staged ファイル名'},
+  commit:{t:'💾 git commit — 変更を保存',d:'ステージングエリアの変更をローカルリポジトリに記録します。\n意味のある単位でメッセージと一緒に保存しましょう。',c:'git commit -m "変更内容のメッセージ"'},
+  diff:{t:'🔎 git diff — 差分を確認',d:'ファイルの変更差分を表示します。\n--staged でステージ済みの差分も確認できます。',c:'git diff\ngit diff --staged'},
+  push:{t:'🚀 git push — リモートに送信',d:'ローカルのコミットをリモートリポジトリに送信します。\nGitHub などに変更を反映させます。',c:'git push origin main'},
+  pull:{t:'📡 git pull — リモートから取得',d:'リモートの最新変更をローカルに取り込みます。\nfetch + merge を一度に行います。',c:'git pull origin main'}
+};
+function showFI(id){
+  const d=FI[id];if(!d)return;
+  const el=document.getElementById('flow-info');
+  document.getElementById('fi-title').textContent=d.t;
+  document.getElementById('fi-desc').textContent=d.d;
+  document.getElementById('fi-cmd').textContent=d.c;
+  el.style.display='block';
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ==================== CHEAT SHEET ====================
+const CHEAT=[
+  {t:'🏗 セットアップ',rows:[['git init','リポジトリを初期化'],['git clone <URL>','リモートをクローン']]},
+  {t:'📋 変更の記録',rows:[['git add <file>','ステージに追加'],['git add .','すべてをステージ'],['git commit -m "msg"','コミットする']]},
+  {t:'🔍 状態確認',rows:[['git status','現在の状態を確認'],['git diff','未ステージの差分'],['git log --oneline','履歴を確認']]},
+  {t:'🌿 ブランチ操作',rows:[['git branch','ブランチ一覧'],['git switch -c <name>','作成+切り替え'],['git merge <branch>','ブランチを統合']]},
+  {t:'☁️ リモート操作',rows:[['git push origin main','プッシュ'],['git pull origin main','プル'],['git fetch','フェッチのみ']]},
+  {t:'↩️ 取り消し',rows:[['git restore <file>','変更を取り消し'],['git restore --staged','ステージを取り消し'],['git revert HEAD','コミットを打ち消し']]}
+];
+function renderCheat(){
+  document.getElementById('cheat-grid').innerHTML=CHEAT.map(s=>`
+    <div class="cheat-card">
+      <p class="cheat-card-title">${s.t}</p>
+      ${s.rows.map(([cmd,note])=>`
+        <div class="cheat-row">
+          <code class="cheat-cmd">${esc(cmd)}</code>
+          <span class="cheat-note">${note}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ==================== QUIZ ====================
+const QS=[
+  {q:'新しいフォルダを Git リポジトリにするコマンドは？',ch:['git init','git start','git create','git new'],a:0,ex:'git init で .git フォルダが作られ Git が使えるようになります！'},
+  {q:'ファイルの変更をステージングエリアに追加するコマンドは？',ch:['git commit','git push','git add','git stage'],a:2,ex:'git add でファイルをコミット準備エリア（ステージング）に追加します！'},
+  {q:'ステージングエリアの変更をリポジトリに記録するコマンドは？',ch:['git save','git add','git commit','git push'],a:2,ex:'git commit でスナップショットとして履歴に保存されます！'},
+  {q:'ローカルのコミットを GitHub などに送信するコマンドは？',ch:['git pull','git push','git send','git upload'],a:1,ex:'git push でリモートリポジトリにアップロードします！'},
+  {q:'リモートリポジトリの変更をローカルに取り込むコマンドは？',ch:['git push','git get','git fetch','git pull'],a:3,ex:'git pull は fetch + merge をまとめて行います！'},
+  {q:'リポジトリの現在の状態を確認するコマンドは？',ch:['git check','git status','git info','git show'],a:1,ex:'git status でどのファイルが変更・ステージされているか確認できます！'},
+  {q:'新しいブランチ "feature" を作って切り替えるコマンドは？',ch:['git branch feature','git checkout feature','git switch -c feature','git new feature'],a:2,ex:'git switch -c ブランチ名 で作成＆切り替えができます！（-c = create）'},
+  {q:'コミット履歴を確認するコマンドは？',ch:['git history','git log','git show','git diff'],a:1,ex:'git log でコミット履歴が表示されます。--oneline で見やすくなります！'},
+  {q:'ファイルの変更差分を確認するコマンドは？',ch:['git change','git diff','git compare','git show'],a:1,ex:'git diff で + が追加行、- が削除行として表示されます！'},
+  {q:'別のブランチの変更を現在のブランチに取り込むコマンドは？',ch:['git join','git combine','git merge','git include'],a:2,ex:'git merge ブランチ名 でブランチを統合します！'},
+  {q:'ステージング済みの変更を確認するコマンドは？',ch:['git diff','git diff --staged','git status --diff','git show --staged'],a:1,ex:'git diff --staged（または --cached）でステージ済みの差分を確認！'},
+  {q:'git clone は何をするコマンド？',ch:['ブランチをコピーする','ファイルをコピーする','リモートリポジトリをローカルにコピーする','コミットをコピーする'],a:2,ex:'git clone でリモートリポジトリ全体をダウンロードできます！'},
+  {q:'作業中の変更を一時的に退避するコマンドは？',ch:['git save','git stash','git hide','git temp'],a:1,ex:'git stash で変更を一時保存。git stash pop で取り出せます！'},
+  {q:'git push origin main の "origin" は何を表す？',ch:['ブランチの名前','リモートリポジトリの別名','コミットのID','ファイルのパス'],a:1,ex:'origin はリモートリポジトリの別名（デフォルト）。git clone で自動設定されます！'},
+  {q:'push 後のコミットを安全に取り消すコマンドは？',ch:['git reset --hard','git undo','git revert','git rollback'],a:2,ex:'git revert は打ち消すコミットを新たに作るので、履歴が残って安全！'},
+  {q:'git log --oneline --graph は何を表示する？',ch:['ファイルの差分','コミット履歴をグラフ付きで表示','ブランチ一覧','リモートの情報'],a:1,ex:'--oneline で短縮表示、--graph でブランチの流れが可視化されます！'},
+  {q:'git add . は何をステージする？',ch:['カレントファイルのみ','.gitignore のファイル','すべての変更ファイル','コミット済みファイル'],a:2,ex:'git add . は現在のディレクトリ以下のすべての変更をステージします！'},
+  {q:'"HEAD" が指しているのは？',ch:['一番古いコミット','現在チェックアウトしているコミット','リモートのブランチ','.git フォルダ'],a:1,ex:'HEAD は現在いる場所を指すポインター。「今自分がどこにいるか」を表します！'},
+  {q:'git fetch と git pull の違いは？',ch:['違いはない','fetch は取得のみ、pull は取得+マージ','pull は取得のみ、fetch は取得+マージ','fetch はローカル、pull はリモート'],a:1,ex:'git fetch はリモートの変更を取得するだけ。git pull = git fetch + git merge！'},
+  {q:'ブランチを切り替える（新しい書き方）は？',ch:['git checkout main','git move main','git switch main','git go main'],a:2,ex:'git switch は git checkout より新しく安全なブランチ切り替えコマンドです！'}
+];
+
+const MONSTERS=[
+  {n:'未コミットの亡霊',s:'👻',hp:5},{n:'コンフリクト魔王',s:'🐙',hp:6},
+  {n:'ファイル消滅スライム',s:'🟢',hp:5},{n:'プッシュ拒否ドラゴン',s:'🐉',hp:7},
+  {n:'ブランチ混乱ゾンビ',s:'🧟',hp:6},{n:'detached HEAD 幽霊',s:'💀',hp:8},
+  {n:'マージ失敗オーク',s:'👹',hp:6},{n:'強制プッシュ悪魔',s:'😈',hp:7}
+];
+
+let PHP=10,php,mhp,mmax,sc,st,lv,qnum,used,answered,monster,grandTotal=0;
+
+function startQuiz(){
+  php=PHP;sc=0;st=0;lv=1;qnum=0;used=[];
+  document.getElementById('q-intro').style.display='none';
+  document.getElementById('q-battle').style.display='block';
+  spawnMonster();nextQ();
+}
+function spawnMonster(){
+  monster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];
+  mmax=monster.hp+Math.floor(lv/2);mhp=mmax;
+  document.getElementById('m-sprite').textContent=monster.s;
+  updateHP();
+}
+function nextQ(){
+  if(qnum>=10){endQuiz(php>0);return;}
+  qnum++;
+  const avail=QS.map((_,i)=>i).filter(i=>!used.includes(i));
+  if(!avail.length)used=[];
+  const pool=QS.map((_,i)=>i).filter(i=>!used.includes(i));
+  const idx=pool[Math.floor(Math.random()*pool.length)];
+  used.push(idx);
+  const q=QS[idx];
+  answered=false;
+  document.getElementById('q-num').textContent=qnum;
+  document.getElementById('q-text').textContent=q.q;
+  // Shuffle choices
+  const orig=[0,1,2,3].sort(()=>Math.random()-.5);
+  const shuffled=orig.map(i=>q.ch[i]);
+  const correctNew=shuffled.indexOf(q.ch[q.a]);
+  const ch=document.getElementById('choices');
+  ch.innerHTML=shuffled.map((c,i)=>`
+    <button class="ch-btn" onclick="pick(this,${i},${correctNew},${idx})">${'ABCD'[i]}. ${esc(c)}</button>`).join('');
+  // Remove old explain box
+  const old=document.getElementById('explain');if(old)old.remove();
+}
+function pick(btn,sel,cor,qidx){
+  if(answered)return;answered=true;
+  document.querySelectorAll('.ch-btn').forEach(b=>b.disabled=true);
+  const q=QS[qidx];
+  if(sel===cor){
+    btn.classList.add('ok');
+    st++;const dmg=1+Math.floor(st/3);
+    sc+=10*(1+Math.floor(st/5));mhp=Math.max(0,mhp-dmg);
+    document.getElementById('sc').textContent=sc;
+    document.getElementById('st').textContent=st;
+    popup(document.getElementById('m-sprite'),'-'+dmg,'var(--red)');
+    beep(880,.08);beep(1100,.08,.12);
+  }else{
+    btn.classList.add('ng');
+    document.querySelectorAll('.ch-btn')[cor].classList.add('ok');
+    st=0;document.getElementById('st').textContent=0;
+    php=Math.max(0,php-1);
+    popup(document.getElementById('p-sprite'),'-1','var(--red)');
+    beep(180,.15);
+  }
+  if(sc>0&&sc%50===0){lv++;document.getElementById('lv').textContent=lv;}
+  updateHP();
+  const box=document.createElement('div');
+  box.id='explain';box.className='explain-box';
+  box.style.borderColor=sel===cor?'var(--green)':'var(--red)';
+  box.innerHTML=(sel===cor?'✅ ':'❌ ')+esc(q.ex);
+  document.getElementById('choices').after(box);
+  setTimeout(()=>{
+    if(mhp<=0){sc+=20;document.getElementById('sc').textContent=sc;spawnMonster();}
+    if(php<=0)endQuiz(false);
+    else nextQ();
+  },2200);
+}
+function updateHP(){
+  const pp=php/PHP*100;
+  const pb=document.getElementById('p-hp-bar');
+  pb.style.width=pp+'%';
+  pb.className='hp-bar'+(pp<=30?' low':pp<=60?' mid':'');
+  document.getElementById('p-hp').textContent=php;
+  const mp=mhp/mmax*100;
+  const mb=document.getElementById('m-hp-bar');
+  mb.style.width=mp+'%';
+  mb.className='hp-bar'+(mp<=30?' low':mp<=60?' mid':'');
+  document.getElementById('m-hp').textContent=mhp;
+  document.getElementById('m-max').textContent=mmax;
+}
+function popup(el,txt,col){
+  const p=document.createElement('div');
+  p.className='dmg-pop';p.textContent=txt;p.style.color=col;
+  p.style.cssText+=`;top:0;left:${20+Math.random()*40}%;`;
+  el.parentElement.style.position='relative';
+  el.parentElement.appendChild(p);
+  setTimeout(()=>p.remove(),800);
+}
+function endQuiz(win){
+  grandTotal+=sc;
+  document.getElementById('grand-total').textContent=grandTotal;
+  document.getElementById('tot-sc').textContent=grandTotal;
+  document.getElementById('r-emoji').textContent=win?'🏆':'💀';
+  document.getElementById('r-title').textContent=win?'VICTORY!':'GAME OVER';
+  document.getElementById('r-msg').textContent=win
+    ?`スコア: ${sc} 点\nレベル: ${lv}\n\n${sc>=100?'Git マスターへの道！素晴らしい！🌟':'よくできました！もっと上を目指そう！'}`
+    :`スコア: ${sc} 点\n\nGit コマンドを道場で復習して\n再挑戦しよう！💪`;
+  document.getElementById('overlay').classList.add('on');
+}
+function closeResult(){
+  document.getElementById('overlay').classList.remove('on');
+  document.getElementById('q-intro').style.display='block';
+  document.getElementById('q-battle').style.display='none';
+}
+
+// ==================== AUDIO ====================
+let AC;
+function beep(f,d,delay=0){
+  try{
+    if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type='square';o.frequency.value=f;g.gain.value=0.07;
+    o.connect(g);g.connect(AC.destination);
+    const t=AC.currentTime+delay;o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+
+// ==================== INIT ====================
+renderDojo();
+renderCheat();
+// 初期セリフ（ページ読み込み時）
+setTimeout(()=>{
+  const bubble = document.getElementById('speech-bubble');
+  bubble.textContent = 'はじめよう！🐴';
+  bubble.classList.add('pop');
+}, 400);
+</script>
+</body>
+</html>
