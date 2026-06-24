@@ -787,8 +787,9 @@ function nextQ(){
   const ch=document.getElementById('choices');
   ch.innerHTML=shuffled.map((c,i)=>`
     <button class="ch-btn" onclick="pick(this,${i},${correctNew},${idx})">${'ABCD'[i]}. ${esc(c)}</button>`).join('');
-  // Remove old explain box
+  // Remove old explain box and next button
   const old=document.getElementById('explain');if(old)old.remove();
+  const nb=document.getElementById('next-btn');if(nb)nb.remove();
 }
 function pick(btn,sel,cor,qidx){
   if(answered)return;answered=true;
@@ -817,11 +818,17 @@ function pick(btn,sel,cor,qidx){
   box.style.borderColor=sel===cor?'var(--green)':'var(--red)';
   box.innerHTML=(sel===cor?'✅ ':'❌ ')+esc(q.ex);
   document.getElementById('choices').after(box);
-  setTimeout(()=>{
+  const nextBtn=document.createElement('button');
+  nextBtn.id='next-btn';
+  nextBtn.className='big-btn g';
+  nextBtn.style.cssText='margin-top:14px;width:100%;';
+  nextBtn.textContent='▶ NEXT';
+  nextBtn.onclick=()=>{
     if(mhp<=0){sc+=20;document.getElementById('sc').textContent=sc;spawnMonster();}
     if(php<=0)endQuiz(false);
     else nextQ();
-  },2200);
+  };
+  box.after(nextBtn);
 }
 function updateHP(){
   const pp=php/PHP*100;
