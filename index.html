@@ -281,6 +281,66 @@
     .speech-bubble.pop {
       animation: poyoon 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
+
+    /* ===== RESPONSIVE ===== */
+    html, body { overflow-x: hidden; }
+    img { max-width: 100%; }
+    .cheat-grid { grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+
+    @media (max-width: 860px) {
+      .nav-btn { font-size: 12px; padding: 10px 14px; }
+      .cmd-name-big { font-size: 18px; }
+      .sec-title { font-size: 17px; }
+    }
+
+    @media (max-width: 640px) {
+      .nav { gap: 6px; padding: 6px 8px; }
+      .nav-btn { font-size: 10px; padding: 8px 10px; border-width: 3px; box-shadow: 3px 3px 0 #000; }
+      .main { padding: 8px 10px 24px; }
+      .sec-title { font-size: 14px; }
+      .sec-sub { font-size: 11px; }
+      .panel-label { font-size: 11px; }
+      .pbox { padding: 12px; }
+      .cmd-name-big { font-size: 14px; }
+      .cmd-desc-text { font-size: 12px; }
+      .cmd-detail { min-height: auto; }
+      .term { font-size: 11px; padding: 10px 12px; }
+      .hint { font-size: 11px; padding: 10px 12px; }
+      .rel-tag { font-size: 11px; }
+      .big-btn { font-size: 13px; padding: 12px 20px; box-shadow: 4px 4px 0 #000; }
+      .q-text { font-size: 13px; }
+      .ch-btn { font-size: 11px; padding: 12px 10px; }
+      .b-name { font-size: 11px; }
+      .sprite { font-size: 36px; }
+      .status-bar { font-size: 11px; padding: 10px 12px; }
+      .explain-box { font-size: 11px; }
+      .hero-sub { font-size: 10px; }
+      .hero-mascot { width: 80px; height: 80px; }
+      .speech-bubble { display: none; }
+      .fi-title { font-size: 13px; }
+      .fi-desc { font-size: 12px; }
+      .zone-title { font-size: 10px; }
+      .zone-name { font-size: 11px; }
+      .zone-desc { font-size: 10px; }
+      .flow-cmd { font-size: 10px; padding: 5px 8px; }
+      .flow-mid { min-width: 80px; padding: 0 6px; gap: 8px; }
+      .flow-zone { min-width: 100px; padding: 10px 8px; }
+      .branch-pre { font-size: 10px; padding: 10px 12px; line-height: 2.2; }
+      .cheat-card { padding: 12px; }
+      .cheat-card-title { font-size: 12px; }
+      .cheat-cmd { font-size: 11px; }
+      .cheat-note { font-size: 10px; }
+      .result-title { font-size: 18px; }
+      .result-msg { font-size: 11px; }
+      .result-box { padding: 20px; }
+    }
+
+    @media (max-width: 400px) {
+      .nav-btn { font-size: 9px; padding: 6px 8px; }
+      .cmd-list { grid-template-columns: repeat(2, 1fr); }
+      .hero-mascot { width: 64px; height: 64px; }
+      .status-bar { gap: 6px; }
+    }
   </style>
 </head>
 <body>
